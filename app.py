@@ -1,4 +1,5 @@
 import sqlite3
+import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -98,8 +99,8 @@ def api_wines():
             query += " AND vintage IN ('2023', '2024', '2025', '2026')"
 
     if country:
-        query += " AND country = ?"
-        params.append(country)
+        query += " AND (country = ? OR country_en = ?)"
+        params.extend([country, country])
 
     if brand:
         query += " AND brand = ?"
@@ -171,28 +172,59 @@ def update_status():
     conn.close()
     return jsonify({'success': True})
 
-# API: Admin จัดการไวน์ (Add / Delete)
-@app.route('/api/admin/wine', methods=['POST', 'DELETE'])
+# API: Admin จัดการไวน์ (Add / Update / Delete รองรับ 2 ภาษา)
+@app.route('/api/admin/wine', methods=['POST', 'PUT', 'DELETE'])
 def admin_wine_manage():
     if session.get('role') != 'admin':
         return jsonify({'success': False, 'message': 'Permission denied'})
 
     conn = get_db_connection()
+    data = request.json if request.method in ['POST', 'PUT'] else {}
+
     if request.method == 'POST':
-        data = request.json
         conn.execute('''
-            INSERT INTO wines (name, price, vintage, city, country, type, variety, alcohol, size, brand, color, sweetness, taste, aroma, food_pairing, description, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO wines (
+                name, price, vintage, city, city_en, country, country_en, type, variety, 
+                alcohol, size, brand, color, color_en, sweetness, sweetness_en, 
+                taste, taste_en, aroma, aroma_en, food_pairing, food_pairing_en, 
+                description, description_en, image_url
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            data.get('name'), data.get('price'), data.get('vintage'), data.get('city'), data.get('country'),
+            data.get('name'), data.get('price'), data.get('vintage'),
+            data.get('city'), data.get('city_en'), data.get('country'), data.get('country_en'),
             data.get('type'), data.get('variety'), data.get('alcohol'), data.get('size'), data.get('brand'),
-            data.get('color'), data.get('sweetness'), data.get('taste'), data.get('aroma'),
-            data.get('food_pairing'), data.get('description'), data.get('image_url')
+            data.get('color'), data.get('color_en'), data.get('sweetness'), data.get('sweetness_en'),
+            data.get('taste'), data.get('taste_en'), data.get('aroma'), data.get('aroma_en'),
+            data.get('food_pairing'), data.get('food_pairing_en'),
+            data.get('description'), data.get('description_en'), data.get('image_url')
         ))
         conn.commit()
         conn.close()
         return jsonify({'success': True, 'message': 'เพิ่มไวน์สำเร็จ'})
     
+    elif request.method == 'PUT':
+        wine_id = data.get('id')
+        conn.execute('''
+            UPDATE wines SET 
+                name=?, price=?, vintage=?, city=?, city_en=?, country=?, country_en=?, 
+                type=?, variety=?, alcohol=?, size=?, brand=?, color=?, color_en=?, 
+                sweetness=?, sweetness_en=?, taste=?, taste_en=?, aroma=?, aroma_en=?, 
+                food_pairing=?, food_pairing_en=?, description=?, description_en=?, image_url=?
+            WHERE id=?
+        ''', (
+            data.get('name'), data.get('price'), data.get('vintage'),
+            data.get('city'), data.get('city_en'), data.get('country'), data.get('country_en'),
+            data.get('type'), data.get('variety'), data.get('alcohol'), data.get('size'), data.get('brand'),
+            data.get('color'), data.get('color_en'), data.get('sweetness'), data.get('sweetness_en'),
+            data.get('taste'), data.get('taste_en'), data.get('aroma'), data.get('aroma_en'),
+            data.get('food_pairing'), data.get('food_pairing_en'),
+            data.get('description'), data.get('description_en'), data.get('image_url'), wine_id
+        ))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'แก้ไขข้อมูลไวน์สำเร็จ'})
+
     elif request.method == 'DELETE':
         wine_id = request.args.get('id')
         conn.execute('DELETE FROM wines WHERE id = ?', (wine_id,))
@@ -200,7 +232,7 @@ def admin_wine_manage():
         conn.close()
         return jsonify({'success': True, 'message': 'ลบไวน์สำเร็จ'})
 
-# API: รายงานการใช้งานระบบ (รายวัน, รายเดือน, รายปี)
+# API: รายงานการใช้งานระบบ
 @app.route('/api/admin/reports', methods=['GET'])
 def admin_reports():
     if session.get('role') != 'admin':
@@ -227,19 +259,18 @@ def admin_reports():
     rows = conn.execute(f"SELECT {query}").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
-# เพิ่ม API สำหรับ Social Login ใน app.py
+
+# API: Social Login
 @app.route('/api/social-login', methods=['POST'])
 def api_social_login():
     data = request.json
     provider = data.get('provider')
     email = f"user@{provider.lower()}.com"
-    name = f"{provider} User"
 
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
     
     if not user:
-        # ถ้ายังไม่มีบัญชี Social นี้ ให้สร้างให้อัตโนมัติ
         conn.execute('INSERT INTO users (first_name, last_name, email, password_hash, role, oauth_provider) VALUES (?, ?, ?, ?, ?, ?)',
                      (provider, 'User', email, generate_password_hash('social_secure'), 'customer', provider))
         conn.commit()
@@ -252,8 +283,6 @@ def api_social_login():
     conn.close()
 
     return jsonify({'success': True, 'role': user['role'], 'name': session['name']})
-
-import os
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

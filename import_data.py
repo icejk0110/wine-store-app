@@ -24,7 +24,7 @@ def init_db():
         )
     ''')
 
-    # สร้างตาราง Wines
+    # สร้างตาราง Wines (รองรับฟิลด์ 2 ภาษา _en)
     cursor.execute('''
         CREATE TABLE wines (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,18 +32,26 @@ def init_db():
             price REAL,
             vintage TEXT,
             city TEXT,
+            city_en TEXT,
             country TEXT,
+            country_en TEXT,
             type TEXT,
             variety TEXT,
             alcohol REAL,
             size TEXT,
             brand TEXT,
             color TEXT,
+            color_en TEXT,
             sweetness TEXT,
+            sweetness_en TEXT,
             taste TEXT,
+            taste_en TEXT,
             aroma TEXT,
+            aroma_en TEXT,
             food_pairing TEXT,
+            food_pairing_en TEXT,
             description TEXT,
+            description_en TEXT,
             image_url TEXT
         )
     ''')
@@ -64,7 +72,7 @@ def init_db():
 
     conn.commit()
     
-    # อ่านไฟล์ CSV โดยระบุ quoting และ on_bad_lines ป้องกันข้อมูลเลื่อม
+    # อ่านไฟล์ CSV
     try:
         df = pd.read_csv('wines_new_2.csv', encoding='utf-8', on_bad_lines='skip')
     except Exception as e:
@@ -84,8 +92,13 @@ def init_db():
             price = 0.0
 
         vintage = str(row.get('vintage', '')).strip()
+        
+        # ดึงข้อมูลภาษาไทยและอังกฤษ
         city = str(row.get('city', '')).strip()
+        city_en = str(row.get('city_en', '')).strip() if pd.notna(row.get('city_en')) else ''
         country = str(row.get('country', '')).strip()
+        country_en = str(row.get('country_en', '')).strip() if pd.notna(row.get('country_en')) else ''
+        
         wine_type = str(row.get('type', '')).strip()
         variety = str(row.get('variety', '')).strip()
         
@@ -100,27 +113,46 @@ def init_db():
 
         size = str(row.get('size', '')).strip()
         brand = str(row.get('brand', '')).strip()
+        
         color = str(row.get('color', '')).strip()
+        color_en = str(row.get('color_en', '')).strip() if pd.notna(row.get('color_en')) else ''
+        
         sweetness = str(row.get('sweetness', '')).strip()
+        sweetness_en = str(row.get('sweetness_en', '')).strip() if pd.notna(row.get('sweetness_en')) else ''
+        
         taste = str(row.get('taste', '')).strip()
+        taste_en = str(row.get('taste_en', '')).strip() if pd.notna(row.get('taste_en')) else ''
+        
         aroma = str(row.get('aroma', '')).strip()
+        aroma_en = str(row.get('aroma_en', '')).strip() if pd.notna(row.get('aroma_en')) else ''
+        
         food_pairing = str(row.get('food_pairing', '')).strip()
+        food_pairing_en = str(row.get('food_pairing_en', '')).strip() if pd.notna(row.get('food_pairing_en')) else ''
+        
         description = str(row.get('description', '')).strip()
+        description_en = str(row.get('description_en', '')).strip() if pd.notna(row.get('description_en')) else ''
+        
         image_url = str(row.get('image_url', '')).strip()
 
         # ป้องกันกรณีสลับคอลัมน์ image_url กับ description
         if image_url.startswith('เป็นไวน์') or image_url.startswith('VRL') or len(image_url) > 150:
-            # สลับกลับหากข้อมูลสลับกัน
             temp = image_url
             image_url = description
             description = temp
 
         cursor.execute('''
-            INSERT INTO wines (name, price, vintage, city, country, type, variety, alcohol, size, brand, color, sweetness, taste, aroma, food_pairing, description, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO wines (
+                name, price, vintage, city, city_en, country, country_en, type, variety, 
+                alcohol, size, brand, color, color_en, sweetness, sweetness_en, 
+                taste, taste_en, aroma, aroma_en, food_pairing, food_pairing_en, 
+                description, description_en, image_url
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            name, price, vintage, city, country, wine_type, variety, alcohol, size, 
-            brand, color, sweetness, taste, aroma, food_pairing, description, image_url
+            name, price, vintage, city, city_en, country, country_en, wine_type, variety, 
+            alcohol, size, brand, color, color_en, sweetness, sweetness_en, 
+            taste, taste_en, aroma, aroma_en, food_pairing, food_pairing_en, 
+            description, description_en, image_url
         ))
     
     # สร้างบัญชี Admin เริ่มต้น
@@ -131,7 +163,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database reloaded successfully with fixed column alignment!")
+    print("Database reloaded successfully with dual-language support!")
 
 if __name__ == '__main__':
     init_db()
