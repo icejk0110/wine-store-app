@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRAND CRU - Wine Selection & Recommendation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Fonts (Sarabun) -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-gray-100 min-h-screen flex" x-data="wineApp()">
+
+    <!-- Sidebar Menu -->
+    <aside class="w-72 bg-[#111827] border-r border-gray-800 flex flex-col justify-between hidden md:flex">
+        <div>
+            <!-- Logo Brand -->
+            <div class="p-6 border-b border-gray-800 flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-xl font-bold text-gray-900 shadow-lg">🍷</div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wider text-amber-500">GRAND CRU</h1>
+                    <p class="text-xs text-gray-400 tracking-widest">WINE SELECTION</p>
+                </div>
+            </div>
+
+            <!-- User Profile Summary -->
+            <template x-if="isLoggedIn">
+                <div class="p-4 m-4 bg-gray-800/50 rounded-xl border border-gray-700/50 flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center font-bold text-white shadow" x-text="userName.charAt(0)"></div>
+                    <div class="overflow-hidden">
+                        <p class="text-sm font-semibold truncate" x-text="userName"></p>
+                        <p class="text-xs text-gray-400 truncate" x-text="userEmail"></p>
+                        <span class="inline-block mt-1 px-2 py-0.5 text-[10px] bg-amber-500/20 text-amber-400 rounded-full font-medium" x-text="userRole === 'admin' ? t('roleAdmin') : t('roleMember')"></span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1">
+                <button @click="currentTab = 'shop'" :class="currentTab === 'shop' ? 'bg-amber-600/20 text-amber-400 border-l-4 border-amber-500' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-r-xl transition font-medium text-sm">
+                    <span>🍷</span>
+                    <span x-text="t('navShop')"></span>
+                </button>
+                <button @click="currentTab = 'profile'" :class="currentTab === 'profile' ? 'bg-amber-600/20 text-amber-400 border-l-4 border-amber-500' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-r-xl transition font-medium text-sm">
+                    <span>👤</span>
+                    <span x-text="t('navProfile')"></span>
+                </button>
+                <button @click="currentTab = 'interests'" :class="currentTab === 'interests' ? 'bg-amber-600/20 text-amber-400 border-l-4 border-amber-500' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-r-xl transition font-medium text-sm justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span>❤️</span>
+                        <span x-text="t('navInterests')"></span>
+                    </div>
+                    <span class="bg-amber-500 text-gray-900 text-xs px-2 py-0.5 rounded-full font-bold" x-text="interestCount"></span>
+                </button>
+                <template x-if="userRole === 'admin'">
+                    <button @click="currentTab = 'admin'" :class="currentTab === 'admin' ? 'bg-amber-600/20 text-amber-400 border-l-4 border-amber-500' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-r-xl transition font-medium text-sm">
+                        <span>🛠️</span>
+                        <span x-text="t('navAdmin')"></span>
+                    </button>
+                </template>
+            </nav>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="p-4 border-t border-gray-800">
+            <template x-if="isLoggedIn">
+                <button @click="logout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 rounded-xl transition text-sm font-medium border border-red-500/20">
+                    <span>🚪</span>
+                    <span x-text="t('logout')"></span>
+                </button>
+            </template>
+            <template x-if="!isLoggedIn">
+                <button @click="showAuthModal = true" class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-gray-900 rounded-xl transition text-sm font-bold shadow">
+                    <span>🔐</span>
+                    <span x-text="t('loginSignupBtn')"></span>
+                </button>
+            </template>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- Top Bar -->
+        <header class="h-16 bg-[#111827]/80 backdrop-blur border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-20">
+            <div class="flex items-center space-x-4">
+                <span class="text-xl font-bold text-amber-400 md:hidden">GRAND CRU</span>
+                <h2 class="text-lg font-semibold text-gray-200" x-text="getPageTitle()"></h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Language Switcher -->
+                <div class="flex items-center bg-gray-900 border border-gray-700 rounded-xl p-1 text-xs font-bold">
+                    <button @click="setLang('th')" :class="lang === 'th' ? 'bg-amber-500 text-gray-900' : 'text-gray-400 hover:text-gray-200'" class="px-2.5 py-1 rounded-lg transition">TH</button>
+                    <button @click="setLang('en')" :class="lang === 'en' ? 'bg-amber-500 text-gray-900' : 'text-gray-400 hover:text-gray-200'" class="px-2.5 py-1 rounded-lg transition">EN</button>
+                </div>
+
+                <template x-if="isLoggedIn">
+                    <span class="text-sm text-gray-300 hidden sm:inline"><span x-text="t('welcome')"></span>, <strong class="text-amber-400" x-text="userName"></strong></span>
+                </template>
+                <template x-if="!isLoggedIn">
+                    <button @click="showAuthModal = true" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-gray-900 font-bold rounded-lg text-sm transition" x-text="t('login')"></button>
+                </template>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Tabs -->
+        <div class="p-6">
+
+            <!-- TAB 1: SHOP & FILTERS -->
+            <div x-show="currentTab === 'shop'" class="space-y-6">
+                <!-- Filter Section -->
+                <div class="bg-[#161f31] p-5 rounded-2xl border border-gray-800 shadow-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterPrice')"></label>
+                        <select x-model="filters.price" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="" x-text="t('all')"></option>
+                            <option value="ต่ำกว่า 599" x-text="lang === 'th' ? 'ต่ำกว่า 599' : 'Under 599'"></option>
+                            <option value="600 – 1199">600 – 1,199</option>
+                            <option value="1200 – 1799">1,200 – 1,799</option>
+                            <option value="1800 – 2399">1,800 – 2,399</option>
+                            <option value="2400 – 2999">2,400 – 2,999</option>
+                            <option value="3000 – 3699">3,000 – 3,699</option>
+                            <option value="3700 – 4299">3,700 – 4,299</option>
+                            <option value="4300 – 4899">4,300 – 4,899</option>
+                            <option value="4900 ขึ้นไป" x-text="lang === 'th' ? '4,900 ขึ้นไป' : '4,900 & Above'"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterType')"></label>
+                        <select x-model="filters.type" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="" x-text="t('all')"></option>
+                            <option value="Red Wine">Red Wine</option>
+                            <option value="White Wine">White Wine</option>
+                            <option value="Rose Wine">Rose Wine</option>
+                            <option value="Sparkling Wine">Sparkling Wine</option>
+                            <option value="Dessert Wine">Dessert Wine</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterVintage')"></label>
+                        <select x-model="filters.vintage" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="" x-text="t('all')"></option>
+                            <option value="2015 – 2018">2015 – 2018</option>
+                            <option value="2019 – 2022">2019 – 2022</option>
+                            <option value="2023 – 2026">2023 – 2026</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterCountry')"></label>
+                        <select x-model="filters.country" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="" x-text="t('all')"></option>
+                            <option value="ชิลี" x-text="lang === 'th' ? 'ชิลี' : 'Chile (ชิลี)'"></option>
+                            <option value="แอฟริกาใต้" x-text="lang === 'th' ? 'แอฟริกาใต้' : 'South Africa (แอฟริกาใต้)'"></option>
+                            <option value="ฝรั่งเศส" x-text="lang === 'th' ? 'ฝรั่งเศส' : 'France (ฝรั่งเศส)'"></option>
+                            <option value="อิตาลี" x-text="lang === 'th' ? 'อิตาลี' : 'Italy (อิตาลี)'"></option>
+                            <option value="ออสเตรีย" x-text="lang === 'th' ? 'ออสเตรีย' : 'Austria (ออสเตรีย)'"></option>
+                            <option value="โปรตุเกส" x-text="lang === 'th' ? 'โปรตุเกส' : 'Portugal (โปรตุเกส)'"></option>
+                            <option value="ออสเตรเลีย" x-text="lang === 'th' ? 'ออสเตรเลีย' : 'Australia (ออสเตรเลีย)'"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterBrand')"></label>
+                        <select x-model="filters.brand" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="" x-text="t('all')"></option>
+                            <template x-for="brand in brandList" :key="brand">
+                                <option :value="brand" x-text="brand"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Wine Grid List -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <template x-for="wine in wines" :key="wine.id">
+                        <div class="bg-[#161f31] border border-gray-800 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between hover:border-amber-500/50 transition group cursor-pointer" @click="openWineDetail(wine)">
+                            <div>
+                                <!-- Image Container & Top Tags -->
+                                <div class="h-60 bg-gray-900 relative overflow-hidden flex items-center justify-center p-4">
+                                    <img :src="getCleanImageUrl(wine.image_url)" @error="$el.src='https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&auto=format&fit=crop&q=60'" alt="Wine Bottle" class="h-full object-contain group-hover:scale-105 transition duration-300">
+                                    
+                                    <div class="absolute top-3 left-3 bg-black/70 backdrop-blur px-2.5 py-1 rounded-full text-xs font-bold text-amber-400 border border-amber-500/30" x-text="wine.vintage"></div>
+                                    <div class="absolute top-3 right-3 bg-black/70 backdrop-blur px-2.5 py-1 rounded-full text-xs font-bold text-gray-200 border border-gray-700" x-text="wine.type"></div>
+                                </div>
+
+                                <!-- Content Info -->
+                                <div class="p-4 space-y-1.5">
+                                    <p class="text-xs font-bold text-amber-500 uppercase tracking-wider" x-text="wine.brand"></p>
+                                    <h3 class="font-bold text-base text-gray-100 line-clamp-1 group-hover:text-amber-400 transition" x-text="wine.name"></h3>
+                                    <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed" x-text="wine.description"></p>
+                                </div>
+                            </div>
+
+                            <!-- Footer Price & Action -->
+                            <div class="p-4 pt-0 flex items-center justify-between border-t border-gray-800/60 mt-2">
+                                <div>
+                                    <span class="text-[10px] text-gray-400 block uppercase tracking-wider" x-text="t('price')"></span>
+                                    <span class="text-lg font-extrabold text-amber-400">฿<span x-text="wine.price ? wine.price.toLocaleString() : '0'"></span></span>
+                                </div>
+                                <button @click.stop="openWineDetail(wine)" class="px-3.5 py-2 bg-amber-600/20 hover:bg-amber-500 text-amber-400 hover:text-gray-900 rounded-xl text-xs font-bold transition border border-amber-500/30 flex items-center space-x-1">
+                                    <span>🍷</span>
+                                    <span x-text="t('viewDetails')"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- TAB 2: PROFILE -->
+            <div x-show="currentTab === 'profile'" class="max-w-xl mx-auto bg-[#161f31] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-6">
+                <h3 class="text-xl font-bold text-amber-400 border-b border-gray-800 pb-4" x-text="t('profileHeader')"></h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" x-text="t('profileName')"></label>
+                        <input type="text" disabled :value="userName" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" x-text="t('email')"></label>
+                        <input type="text" disabled :value="userEmail" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" x-text="t('profileRole')"></label>
+                        <input type="text" disabled :value="userRole === 'admin' ? t('roleAdmin') : t('roleCustomer')" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-amber-400 font-semibold text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: INTERESTS & TRACKING -->
+            <div x-show="currentTab === 'interests'" class="space-y-6">
+                <div class="bg-[#161f31] border border-gray-800 rounded-2xl p-6 shadow-xl overflow-x-auto">
+                    <h3 class="text-xl font-bold text-amber-400 mb-4" x-text="t('interestsHeader')"></h3>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                                <th class="py-3 px-4" x-text="t('colWine')"></th>
+                                <th class="py-3 px-4" x-text="t('price')"></th>
+                                <th class="py-3 px-4" x-text="t('colQty')"></th>
+                                <th class="py-3 px-4" x-text="t('colDate')"></th>
+                                <th class="py-3 px-4" x-text="t('colStatus')"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800 text-sm">
+                            <template x-for="item in interestList" :key="item.id">
+                                <tr>
+                                    <td class="py-4 px-4 flex items-center space-x-3">
+                                        <img :src="getCleanImageUrl(item.image_url)" class="w-10 h-10 object-contain bg-gray-900 rounded-lg p-1">
+                                        <div>
+                                            <p class="font-bold text-gray-200" x-text="item.wine_name"></p>
+                                            <template x-if="userRole === 'admin'">
+                                                <p class="text-xs text-amber-400"><span x-text="t('customer')"></span>: <span x-text="item.first_name + ' ' + item.last_name"></span></p>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-amber-400 font-semibold">฿<span x-text="item.price ? item.price.toLocaleString() : '0'"></span></td>
+                                    <td class="py-4 px-4"><span x-text="item.quantity"></span> <span x-text="t('bottles')"></span></td>
+                                    <td class="py-4 px-4 text-gray-400 text-xs" x-text="item.created_at"></td>
+                                    <td class="py-4 px-4">
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                              :class="{
+                                                  'bg-blue-500/20 text-blue-400 border border-blue-500/30': item.status === 'กำลังจัดสั่งซื้อ',
+                                                  'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30': item.status === 'ระหว่างขนส่ง',
+                                                  'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': item.status === 'กำลังจัดจำหน่าย',
+                                                  'bg-gray-700 text-gray-300': item.status === 'จำหน่ายแล้ว'
+                                              }" x-text="translateStatus(item.status)"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: ADMIN DASHBOARD -->
+            <div x-show="currentTab === 'admin' && userRole === 'admin'" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-[#161f31] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-lg font-bold text-amber-400" x-text="t('adminUpdateStatus')"></h3>
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            <template x-for="item in interestList" :key="item.id">
+                                <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-bold text-sm text-gray-200" x-text="item.wine_name"></span>
+                                        <span class="text-xs text-amber-400"><span x-text="item.quantity"></span> <span x-text="t('bottles')"></span></span>
+                                    </div>
+                                    <p class="text-xs text-gray-400"><span x-text="t('interestedBy')"></span>: <span x-text="item.first_name + ' ' + item.last_name"></span> (<span x-text="item.email"></span>)</p>
+                                    <div class="flex items-center space-x-2 pt-2">
+                                        <select x-model="item.status" class="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg px-2 py-1.5 flex-1">
+                                            <option value="กำลังจัดสั่งซื้อ" x-text="t('statusOrdering')"></option>
+                                            <option value="ระหว่างขนส่ง" x-text="t('statusShipping')"></option>
+                                            <option value="กำลังจัดจำหน่าย" x-text="t('statusSelling')"></option>
+                                            <option value="จำหน่ายแล้ว" x-text="t('statusSold')"></option>
+                                        </select>
+                                        <button @click="updateOrderStatus(item.id, item.status)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-gray-900 text-xs font-bold rounded-lg transition" x-text="t('updateBtn')"></button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#161f31] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-amber-400" x-text="t('adminReports')"></h3>
+                            <select x-model="reportPeriod" @change="fetchReports()" class="bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-1.5">
+                                <option value="daily" x-text="t('daily')"></option>
+                                <option value="monthly" x-text="t('monthly')"></option>
+                                <option value="yearly" x-text="t('yearly')"></option>
+                            </select>
+                        </div>
+                        <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                            <template x-for="rep in reports" :key="rep.period_time">
+                                <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center">
+                                    <span class="text-sm font-semibold text-gray-300" x-text="rep.period_time"></span>
+                                    <div class="text-right">
+                                        <span class="text-xs text-gray-400 block"><span x-text="t('requests')"></span>: <strong class="text-amber-400" x-text="rep.total_requests"></strong> <span x-text="t('times')"></span></span>
+                                        <span class="text-xs text-gray-400"><span x-text="t('totalQty')"></span>: <strong class="text-amber-400" x-text="rep.total_quantity"></strong> <span x-text="t('bottles')"></span></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- ตารางจัดการข้อมูลสินค้าไวน์ (เพิ่ม / แก้ไข / ลบ) -->
+                    <div class="bg-[#161f31] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4 md:col-span-2">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-amber-400" x-text="t('adminManageWines')"></h3>
+                            <button @click="openWineForm()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-gray-900 text-xs font-bold rounded-xl transition" x-text="t('addNewWineBtn')"></button>
+                        </div>
+                        
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                                        <th class="py-3 px-3" x-text="t('colImage')"></th>
+                                        <th class="py-3 px-3" x-text="t('colNameBrand')"></th>
+                                        <th class="py-3 px-3" x-text="t('colType')"></th>
+                                        <th class="py-3 px-3" x-text="t('price')"></th>
+                                        <th class="py-3 px-3 text-center" x-text="t('colManage')"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800 text-sm">
+                                    <template x-for="wine in wines" :key="wine.id">
+                                        <tr>
+                                            <td class="py-3 px-3">
+                                                <img :src="getCleanImageUrl(wine.image_url)" class="w-10 h-10 object-contain bg-gray-900 rounded-lg p-1">
+                                            </td>
+                                            <td class="py-3 px-3">
+                                                <p class="font-bold text-gray-200" x-text="wine.name"></p>
+                                                <p class="text-xs text-amber-500" x-text="wine.brand"></p>
+                                            </td>
+                                            <td class="py-3 px-3 text-gray-300 text-xs" x-text="wine.type"></td>
+                                            <td class="py-3 px-3 text-amber-400 font-semibold">฿<span x-text="wine.price ? wine.price.toLocaleString() : '0'"></span></td>
+                                            <td class="py-3 px-3 text-center space-x-2">
+                                                <button @click="editWine(wine)" class="px-2.5 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg text-xs transition" x-text="t('editBtn')"></button>
+                                                <button @click="deleteWine(wine.id)" class="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-xs transition" x-text="t('deleteBtn')"></button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL: AUTH (LOGIN / SIGNUP) -->
+    <div x-show="showAuthModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div class="bg-[#161f31] border border-gray-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative space-y-6">
+            <button @click="showAuthModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+            
+            <div class="text-center space-y-1">
+                <h3 class="text-2xl font-bold text-amber-400">GRAND CRU</h3>
+                <p class="text-xs text-gray-400" x-text="t('authSub')"></p>
+            </div>
+
+            <div class="flex bg-gray-900 p-1 rounded-xl">
+                <button @click="authMode = 'login'" :class="authMode === 'login' ? 'bg-amber-600 text-gray-900 font-bold' : 'text-gray-400'" class="flex-1 py-2 rounded-lg text-sm transition" x-text="t('login')"></button>
+                <button @click="authMode = 'signup'" :class="authMode === 'signup' ? 'bg-amber-600 text-gray-900 font-bold' : 'text-gray-400'" class="flex-1 py-2 rounded-lg text-sm transition" x-text="t('signup')"></button>
+            </div>
+
+            <form x-show="authMode === 'login'" @submit.prevent="login()" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1" x-text="t('email')"></label>
+                    <input type="email" x-model="loginForm.email" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1" x-text="t('password')"></label>
+                    <input type="password" x-model="loginForm.password" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-amber-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-gray-900 font-bold rounded-xl text-sm transition shadow" x-text="t('login')"></button>
+            </form>
+
+            <form x-show="authMode === 'signup'" @submit.prevent="signup()" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" :placeholder="t('firstName')" x-model="signupForm.first_name" required class="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200">
+                    <input type="text" :placeholder="t('lastName')" x-model="signupForm.last_name" required class="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200">
+                </div>
+                <input type="email" :placeholder="t('email')" x-model="signupForm.email" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200">
+                <input type="password" :placeholder="t('password')" x-model="signupForm.password" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200">
+                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-gray-900 font-bold rounded-xl text-sm transition shadow" x-text="t('signup')"></button>
+            </form>
+
+            <div class="space-y-2 pt-2 border-t border-gray-800">
+                <p class="text-center text-xs text-gray-500" x-text="t('socialLoginText')"></p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button @click="socialLogin('Google')" class="py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-xl font-medium transition">Google</button>
+                    <button @click="socialLogin('Facebook')" class="py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-xl font-medium transition">Facebook</button>
+                    <button @click="socialLogin('Line')" class="py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-xl font-medium transition">Line</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: WINE DETAIL & INTEREST RECOMMENDATION -->
+    <div x-show="selectedWine" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" x-cloak>
+        <div class="bg-[#161f31] border border-gray-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative space-y-6 my-8 max-h-[90vh] overflow-y-auto" @click.stop>
+            <button @click="selectedWine = null" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            
+            <template x-if="selectedWine">
+                <div class="space-y-6">
+                    <!-- Header Info -->
+                    <div class="flex flex-col md:flex-row gap-6 items-center bg-gray-900/50 p-4 rounded-2xl border border-gray-800">
+                        <img :src="getCleanImageUrl(selectedWine.image_url)" class="w-36 h-48 object-contain bg-gray-900 rounded-xl p-2 border border-gray-800" @error="$el.src='https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&auto=format&fit=crop&q=60'">
+                        <div class="space-y-2 flex-1">
+                            <span class="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30" x-text="selectedWine.brand"></span>
+                            <h3 class="text-xl font-bold text-gray-100" x-text="selectedWine.name"></h3>
+                            <p class="text-2xl font-extrabold text-amber-400">฿<span x-text="selectedWine.price ? selectedWine.price.toLocaleString() : '0'"></span></p>
+                            
+                            <!-- Badges -->
+                            <div class="flex flex-wrap gap-2 pt-1 text-xs text-gray-300">
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeType')"></span>: <strong class="text-amber-400" x-text="selectedWine.type"></strong></span>
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeVintage')"></span>: <strong class="text-amber-400" x-text="selectedWine.vintage"></strong></span>
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCountry')"></span>: <strong class="text-amber-400" x-text="selectedWine.country"></strong></span>
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCity')"></span>: <strong class="text-amber-400" x-text="selectedWine.city"></strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Wine Attributes -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-300">
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
+                            <p class="text-amber-500 font-bold" x-text="t('attrVariety')"></p>
+                            <p class="text-sm font-semibold text-gray-200" x-text="selectedWine.variety || '-'"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
+                            <p class="text-amber-500 font-bold" x-text="t('attrAlcohol')"></p>
+                            <p class="text-sm font-bold text-emerald-400" x-text="formatAlcohol(selectedWine.alcohol)"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
+                            <p class="text-amber-500 font-bold" x-text="t('attrColorSweet')"></p>
+                            <p><span x-text="selectedWine.color || '-'"></span> / <span x-text="selectedWine.sweetness || '-'"></span></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
+                            <p class="text-amber-500 font-bold" x-text="t('attrSize')"></p>
+                            <p x-text="selectedWine.size || '-'"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
+                            <p class="text-amber-500 font-bold" x-text="t('attrTaste')"></p>
+                            <p class="leading-relaxed" x-text="selectedWine.taste || '-'"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
+                            <p class="text-amber-500 font-bold" x-text="t('attrAroma')"></p>
+                            <p class="leading-relaxed" x-text="selectedWine.aroma || '-'"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
+                            <p class="text-amber-500 font-bold" x-text="t('attrPairing')"></p>
+                            <p class="leading-relaxed" x-text="selectedWine.food_pairing || '-'"></p>
+                        </div>
+                        <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
+                            <p class="text-amber-500 font-bold" x-text="t('attrDesc')"></p>
+                            <p class="leading-relaxed text-gray-400" x-text="selectedWine.description || '-'"></p>
+                        </div>
+                    </div>
+
+                    <!-- Interest Action Box -->
+                    <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3 w-full sm:w-auto">
+                            <label class="text-xs text-gray-400" x-text="t('qtyLabel')"></label>
+                            <input type="number" min="1" x-model.number="interestQuantity" class="w-20 bg-gray-800 border border-gray-700 text-center rounded-lg px-2 py-1.5 text-sm font-bold text-amber-400">
+                        </div>
+                        <button @click="saveInterest()" class="w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-gray-900 font-bold rounded-xl text-sm transition shadow" x-text="t('saveInterestBtn')"></button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN ADD/EDIT WINE FORM -->
+    <div x-show="showWineFormModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" x-cloak>
+        <div class="bg-[#161f31] border border-gray-800 w-full max-w-3xl rounded-2xl p-6 shadow-2xl relative space-y-6 my-8 max-h-[90vh] overflow-y-auto" @click.stop>
+            <button @click="showWineFormModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            
+            <h3 class="text-xl font-bold text-amber-400" x-text="isEditingWine ? t('editWineTitle') : t('addWineTitle')"></h3>
+
+            <form @submit.prevent="saveWineForm()" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formName')"></label>
+                    <input type="text" x-model="wineForm.name" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formBrand')"></label>
+                    <input type="text" x-model="wineForm.brand" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formPrice')"></label>
+                    <input type="number" step="any" x-model="wineForm.price" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formType')"></label>
+                    <select x-model="wineForm.type" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                        <option value="Red Wine">Red Wine</option>
+                        <option value="White Wine">White Wine</option>
+                        <option value="Rose Wine">Rose Wine</option>
+                        <option value="Sparkling Wine">Sparkling Wine</option>
+                        <option value="Dessert Wine">Dessert Wine</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formVintage')"></label>
+                    <input type="text" x-model="wineForm.vintage" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formCountry')"></label>
+                    <input type="text" x-model="wineForm.country" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formCity')"></label>
+                    <input type="text" x-model="wineForm.city" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formVariety')"></label>
+                    <input type="text" x-model="wineForm.variety" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formAlcohol')"></label>
+                    <input type="number" step="any" x-model="wineForm.alcohol" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formSize')"></label>
+                    <input type="text" x-model="wineForm.size" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formColor')"></label>
+                    <input type="text" x-model="wineForm.color" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1" x-text="t('formSweetness')"></label>
+                    <input type="text" x-model="wineForm.sweetness" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-400 mb-1" x-text="t('formTaste')"></label>
+                    <textarea x-model="wineForm.taste" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-400 mb-1" x-text="t('formAroma')"></label>
+                    <textarea x-model="wineForm.aroma" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-400 mb-1" x-text="t('formPairing')"></label>
+                    <input type="text" x-model="wineForm.food_pairing" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-400 mb-1" x-text="t('formDesc')"></label>
+                    <textarea x-model="wineForm.description" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-400 mb-1" x-text="t('formImage')"></label>
+                    <input type="text" x-model="wineForm.image_url" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <div class="md:col-span-2 pt-4 flex justify-end space-x-3">
+                    <button type="button" @click="showWineFormModal = false" class="px-4 py-2 bg-gray-800 text-gray-300 rounded-xl" x-text="t('cancelBtn')"></button>
+                    <button type="submit" class="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-gray-900 font-bold rounded-xl" x-text="t('saveBtn')"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        const translations = {
+            th: {
+                roleAdmin: 'ผู้ดูแลระบบ (Admin)',
+                roleMember: 'สมาชิก (Member)',
+                roleCustomer: 'ลูกค้าสมาชิก (Customer)',
+                navShop: 'ค้นหา & แนะนำไวน์',
+                navProfile: 'ข้อมูลส่วนตัว',
+                navInterests: 'รายการที่สนใจ & ติดตาม',
+                navAdmin: 'ระบบหลังบ้าน (Admin)',
+                logout: 'ออกจากระบบ',
+                loginSignupBtn: 'เข้าสู่ระบบ / สมัครสมาชิก',
+                welcome: 'ยินดีต้อนรับ',
+                login: 'เข้าสู่ระบบ',
+                signup: 'สมัครสมาชิก',
+                filterPrice: 'ช่วงราคา (บาท)',
+                filterType: 'ประเภทไวน์',
+                filterVintage: 'ปีที่ผลิต (Vintage)',
+                filterCountry: 'ประเทศผู้ผลิต',
+                filterBrand: 'แบรนด์',
+                all: 'ทั้งหมด',
+                price: 'ราคา',
+                viewDetails: 'ดูรายละเอียด',
+                profileHeader: 'ข้อมูลส่วนตัวผู้ใช้งาน',
+                profileName: 'ชื่อ-นามสกุล / ชื่อผู้ใช้',
+                email: 'อีเมล',
+                password: 'รหัสผ่าน',
+                firstName: 'ชื่อ',
+                lastName: 'นามสกุล',
+                profileRole: 'สถานะสิทธิ์การใช้งาน',
+                interestsHeader: 'รายการไวน์ที่คุณสนใจ & ติดตามสถานะ',
+                colWine: 'สินค้าไวน์',
+                colQty: 'จำนวน',
+                colDate: 'วันที่บันทึก',
+                colStatus: 'สถานะคำสั่งซื้อ',
+                customer: 'ลูกค้า',
+                bottles: 'ขวด',
+                statusOrdering: 'กำลังจัดสั่งซื้อ',
+                statusShipping: 'ระหว่างขนส่ง',
+                statusSelling: 'กำลังจัดจำหน่าย',
+                statusSold: 'จำหน่ายแล้ว',
+                adminUpdateStatus: 'อัพเดตสถานะความสนใจของลูกค้า',
+                interestedBy: 'ผู้สนใจ',
+                updateBtn: 'อัพเดต',
+                adminReports: 'รายงานการใช้งานระบบ',
+                daily: 'รายวัน (Daily)',
+                monthly: 'รายเดือน (Monthly)',
+                yearly: 'รายปี (Yearly)',
+                requests: 'คำขอ',
+                times: 'ครั้ง',
+                totalQty: 'รวมจำนวน',
+                adminManageWines: 'จัดการข้อมูลสินค้าไวน์ (เพิ่ม / แก้ไข / ลบ)',
+                addNewWineBtn: '+ เพิ่มไวน์ใหม่',
+                colImage: 'รูป',
+                colNameBrand: 'ชื่อไวน์ & แบรนด์',
+                colType: 'ประเภท',
+                colManage: 'จัดการ',
+                editBtn: 'แก้ไข',
+                deleteBtn: 'ลบ',
+                authSub: 'เข้าสู่ระบบหรือสร้างบัญชีใหม่เพื่อจัดการรายการไวน์',
+                socialLoginText: 'หรือเข้าสู่ระบบผ่านโซเชียลมีเดีย',
+                badgeType: 'ประเภท',
+                badgeVintage: 'ปี',
+                badgeCountry: 'ประเทศ',
+                badgeCity: 'เมือง',
+                attrVariety: '🍇 สายพันธุ์องุ่น',
+                attrAlcohol: '🧪 ระดับแอลกอฮอล์ (Alcohol Level)',
+                attrColorSweet: '🎨 สี & ความหวาน',
+                attrSize: '🍾 ขนาดบรรจุ',
+                attrTaste: '👅 รสชาติ (Taste)',
+                attrAroma: '👃 กลิ่น (Aroma)',
+                attrPairing: '🍽️ อาหารที่เข้ากัน (Food Pairing)',
+                attrDesc: '📖 คำอธิบาย (Description)',
+                qtyLabel: 'จำนวนขวด:',
+                saveInterestBtn: '❤️ บันทึกความสนใจ / สั่งซื้อ',
+                editWineTitle: 'แก้ไขข้อมูลไวน์',
+                addWineTitle: 'เพิ่มไวน์ใหม่',
+                formName: 'ชื่อไวน์ (Name)',
+                formBrand: 'แบรนด์ (Brand)',
+                formPrice: 'ราคา (Price - บาท)',
+                formType: 'ประเภทไวน์ (Type)',
+                formVintage: 'ปีที่ผลิต (Vintage)',
+                formCountry: 'ประเทศ (Country)',
+                formCity: 'เมือง (City)',
+                formVariety: 'สายพันธุ์องุ่น (Variety)',
+                formAlcohol: 'ระดับแอลกอฮอล์ (Alcohol เช่น 0.135)',
+                formSize: 'ขนาดบรรจุ (Size)',
+                formColor: 'สี (Color)',
+                formSweetness: 'ความหวาน (Sweetness)',
+                formTaste: 'รสชาติ (Taste)',
+                formAroma: 'กลิ่น (Aroma)',
+                formPairing: 'อาหารที่เข้ากัน (Food Pairing)',
+                formDesc: 'คำอธิบาย (Description)',
+                formImage: 'ลิงก์รูปภาพ (Image URL)',
+                cancelBtn: 'ยกเลิก',
+                saveBtn: 'บันทึกข้อมูล',
+                pageTitleShop: 'ค้นหา & แนะนำไวน์ (Wine Selection)',
+                pageTitleProfile: 'ข้อมูลส่วนตัว (User Profile)',
+                pageTitleInterests: 'รายการที่คุณสนใจ & ติดตามคำสั่งซื้อ',
+                pageTitleAdmin: 'ระบบหลังบ้าน (Admin Dashboard)',
+                msgLoginSuccess: 'เข้าสู่ระบบสำเร็จ',
+                msgLogoutSuccess: 'ออกจากระบบแล้ว',
+                msgLoginFirst: 'กรุณาเข้าสู่ระบบก่อนบันทึกรายการ',
+                msgStatusUpdated: 'อัปเดตสถานะสำเร็จ',
+                msgConfirmDelete: 'คุณต้องการลบไวน์รายการนี้ใช่หรือไม่?',
+                msgError: 'เกิดข้อผิดพลาด: ',
+                msgDeleteError: 'ไม่สามารถลบได้: '
+            },
+            en: {
+                roleAdmin: 'Administrator (Admin)',
+                roleMember: 'Member',
+                roleCustomer: 'Customer Member',
+                navShop: 'Wine Search & Recommendations',
+                navProfile: 'My Profile',
+                navInterests: 'Wishlist & Order Tracking',
+                navAdmin: 'Admin Dashboard',
+                logout: 'Logout',
+                loginSignupBtn: 'Login / Sign Up',
+                welcome: 'Welcome',
+                login: 'Login',
+                signup: 'Sign Up',
+                filterPrice: 'Price Range (THB)',
+                filterType: 'Wine Type',
+                filterVintage: 'Vintage Year',
+                filterCountry: 'Country',
+                filterBrand: 'Brand',
+                all: 'All',
+                price: 'Price',
+                viewDetails: 'View Details',
+                profileHeader: 'User Profile Information',
+                profileName: 'Full Name / Username',
+                email: 'Email',
+                password: 'Password',
+                firstName: 'First Name',
+                lastName: 'Last Name',
+                profileRole: 'Account Role',
+                interestsHeader: 'Your Wishlist & Order Status',
+                colWine: 'Wine Product',
+                colQty: 'Quantity',
+                colDate: 'Date Saved',
+                colStatus: 'Order Status',
+                customer: 'Customer',
+                bottles: 'bottles',
+                statusOrdering: 'Ordering',
+                statusShipping: 'In Transit',
+                statusSelling: 'Available',
+                statusSold: 'Sold',
+                adminUpdateStatus: 'Update Customer Order Status',
+                interestedBy: 'Customer',
+                updateBtn: 'Update',
+                adminReports: 'System Usage Reports',
+                daily: 'Daily',
+                monthly: 'Monthly',
+                yearly: 'Yearly',
+                requests: 'Requests',
+                times: 'times',
+                totalQty: 'Total Qty',
+                adminManageWines: 'Manage Wine Products (Add / Edit / Delete)',
+                addNewWineBtn: '+ Add New Wine',
+                colImage: 'Image',
+                colNameBrand: 'Wine Name & Brand',
+                colType: 'Type',
+                colManage: 'Actions',
+                editBtn: 'Edit',
+                deleteBtn: 'Delete',
+                authSub: 'Log in or create a new account to manage your wine list',
+                socialLoginText: 'Or continue with social media',
+                badgeType: 'Type',
+                badgeVintage: 'Vintage',
+                badgeCountry: 'Country',
+                badgeCity: 'Region/City',
+                attrVariety: '🍇 Grape Variety',
+                attrAlcohol: '🧪 Alcohol Level',
+                attrColorSweet: '🎨 Color & Sweetness',
+                attrSize: '🍾 Bottle Size',
+                attrTaste: '👅 Tasting Notes',
+                attrAroma: '👃 Aroma',
+                attrPairing: '🍽️ Food Pairing',
+                attrDesc: '📖 Description',
+                qtyLabel: 'Quantity (bottles):',
+                saveInterestBtn: '❤️ Save to Wishlist / Order',
+                editWineTitle: 'Edit Wine Details',
+                addWineTitle: 'Add New Wine',
+                formName: 'Wine Name',
+                formBrand: 'Brand',
+                formPrice: 'Price (THB)',
+                formType: 'Wine Type',
+                formVintage: 'Vintage',
+                formCountry: 'Country',
+                formCity: 'City / Region',
+                formVariety: 'Grape Variety',
+                formAlcohol: 'Alcohol Level (e.g. 0.135)',
+                formSize: 'Bottle Size',
+                formColor: 'Color',
+                formSweetness: 'Sweetness',
+                formTaste: 'Taste',
+                formAroma: 'Aroma',
+                formPairing: 'Food Pairing',
+                formDesc: 'Description',
+                formImage: 'Image URL',
+                cancelBtn: 'Cancel',
+                saveBtn: 'Save Changes',
+                pageTitleShop: 'Wine Search & Recommendations',
+                pageTitleProfile: 'User Profile',
+                pageTitleInterests: 'Wishlist & Order Tracking',
+                pageTitleAdmin: 'Admin Dashboard',
+                msgLoginSuccess: 'Login successful',
+                msgLogoutSuccess: 'Logged out successfully',
+                msgLoginFirst: 'Please log in before saving items',
+                msgStatusUpdated: 'Status updated successfully',
+                msgConfirmDelete: 'Are you sure you want to delete this wine?',
+                msgError: 'Error: ',
+                msgDeleteError: 'Unable to delete: '
+            }
+        };
+
+        function wineApp() {
+            return {
+                lang: localStorage.getItem('grandcru_lang') || 'th',
+                isLoggedIn: false,
+                userName: '',
+                userEmail: '',
+                userRole: 'customer',
+                currentTab: 'shop',
+                wines: [],
+                brandList: [],
+                filters: { price: '', type: '', vintage: '', country: '', brand: '' },
+                interestList: [],
+                interestCount: 0,
+                showAuthModal: false,
+                authMode: 'login',
+                loginForm: { email: '', password: '' },
+                signupForm: { first_name: '', last_name: '', email: '', password: '' },
+                selectedWine: null,
+                interestQuantity: 1,
+                reportPeriod: 'monthly',
+                reports: [],
+
+                // Admin Wine Form States
+                showWineFormModal: false,
+                isEditingWine: false,
+                wineForm: {
+                    id: null, name: '', price: '', vintage: '', city: '', country: '',
+                    type: 'Red Wine', variety: '', alcohol: '', size: '', brand: '',
+                    color: '', sweetness: '', taste: '', aroma: '', food_pairing: '',
+                    description: '', image_url: ''
+                },
+
+                init() {
+                    this.fetchWines();
+                    this.checkSession();
+                },
+
+                setLang(newLang) {
+                    this.lang = newLang;
+                    localStorage.setItem('grandcru_lang', newLang);
+                },
+
+                t(key) {
+                    return translations[this.lang][key] || key;
+                },
+
+                translateStatus(status) {
+                    const map = {
+                        'กำลังจัดสั่งซื้อ': this.t('statusOrdering'),
+                        'ระหว่างขนส่ง': this.t('statusShipping'),
+                        'กำลังจัดจำหน่าย': this.t('statusSelling'),
+                        'จำหน่ายแล้ว': this.t('statusSold')
+                    };
+                    return map[status] || status;
+                },
+
+                async checkSession() {
+                    try {
+                        const res = await fetch('/api/interests/list');
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                            this.isLoggedIn = true;
+                            this.interestList = data;
+                            this.interestCount = data.length;
+                        }
+                    } catch(e) {}
+                },
+
+                async fetchWines() {
+                    let params = new URLSearchParams();
+                    for (let key in this.filters) {
+                        if (this.filters[key]) params.append(key, this.filters[key]);
+                    }
+                    const res = await fetch('/api/wines?' + params.toString());
+                    const data = await res.json();
+                    this.wines = data;
+                    
+                    const brands = [...new Set(data.map(w => w.brand))].filter(Boolean);
+                    this.brandList = brands;
+                },
+
+                async login() {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.loginForm)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.isLoggedIn = true;
+                        this.userName = data.name;
+                        this.userRole = data.role;
+                        this.showAuthModal = false;
+                        this.fetchInterests();
+                        this.fetchReports();
+                        alert(this.t('msgLoginSuccess'));
+                    } else {
+                        alert(data.message);
+                    }
+                },
+
+                async signup() {
+                    const res = await fetch('/api/signup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.signupForm)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(data.message);
+                        this.authMode = 'login';
+                    } else {
+                        alert(data.message);
+                    }
+                },
+
+                async socialLogin(provider) {
+                    const res = await fetch('/api/social-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ provider })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.isLoggedIn = true;
+                        this.userName = data.name;
+                        this.userRole = data.role;
+                        this.showAuthModal = false;
+                        this.fetchInterests();
+                        this.fetchReports();
+                        alert(this.t('msgLoginSuccess') + ' (' + provider + ')');
+                    }
+                },
+
+                async logout() {
+                    await fetch('/api/logout');
+                    this.isLoggedIn = false;
+                    this.userName = '';
+                    this.userEmail = '';
+                    this.userRole = 'customer';
+                    this.interestList = [];
+                    this.interestCount = 0;
+                    this.currentTab = 'shop';
+                    alert(this.t('msgLogoutSuccess'));
+                },
+
+                async fetchInterests() {
+                    const res = await fetch('/api/interests/list');
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        this.interestList = data;
+                        this.interestCount = data.length;
+                    }
+                },
+
+                async saveInterest() {
+                    if (!this.isLoggedIn) {
+                        alert(this.t('msgLoginFirst'));
+                        this.showAuthModal = true;
+                        return;
+                    }
+                    const res = await fetch('/api/interest', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ wine_id: this.selectedWine.id, quantity: this.interestQuantity })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(data.message);
+                        this.selectedWine = null;
+                        this.fetchInterests();
+                    } else {
+                        alert(data.message);
+                    }
+                },
+
+                async updateOrderStatus(interestId, status) {
+                    const res = await fetch('/api/admin/update-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ interest_id: interestId, status: status })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(this.t('msgStatusUpdated'));
+                        this.fetchInterests();
+                    }
+                },
+
+                async fetchReports() {
+                    const res = await fetch(`/api/admin/reports?period=${this.reportPeriod}`);
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        this.reports = data;
+                    }
+                },
+
+                openWineForm() {
+                    this.isEditingWine = false;
+                    this.wineForm = {
+                        id: null, name: '', price: '', vintage: '', city: '', country: '',
+                        type: 'Red Wine', variety: '', alcohol: '', size: '', brand: '',
+                        color: '', sweetness: '', taste: '', aroma: '', food_pairing: '',
+                        description: '', image_url: ''
+                    };
+                    this.showWineFormModal = true;
+                },
+
+                editWine(wine) {
+                    this.isEditingWine = true;
+                    this.wineForm = { ...wine };
+                    this.showWineFormModal = true;
+                },
+
+                async saveWineForm() {
+                    const method = this.isEditingWine ? 'PUT' : 'POST';
+                    const res = await fetch('/api/admin/wine', {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.wineForm)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(data.message);
+                        this.showWineFormModal = false;
+                        this.fetchWines();
+                    } else {
+                        alert(this.t('msgError') + data.message);
+                    }
+                },
+
+                async deleteWine(wineId) {
+                    if (!confirm(this.t('msgConfirmDelete'))) return;
+                    const res = await fetch(`/api/admin/wine?id=${wineId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.fetchWines();
+                    } else {
+                        alert(this.t('msgDeleteError') + data.message);
+                    }
+                },
+
+                openWineDetail(wine) {
+                    this.selectedWine = wine;
+                    this.interestQuantity = 1;
+                },
+
+                getPageTitle() {
+                    const titles = {
+                        'shop': this.t('pageTitleShop'),
+                        'profile': this.t('pageTitleProfile'),
+                        'interests': this.t('pageTitleInterests'),
+                        'admin': this.t('pageTitleAdmin')
+                    };
+                    return titles[this.currentTab] || '';
+                },
+
+                getCleanImageUrl(url) {
+                    if (!url) return 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&auto=format&fit=crop&q=60';
+                    if (url.includes('drive.google.com')) {
+                        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                        }
+                    }
+                    return url;
+                },
+
+                formatAlcohol(alc) {
+                    if (!alc) return '-';
+                    if (typeof alc === 'number') {
+                        return (alc <= 1 ? (alc * 100).toFixed(1) : alc.toFixed(1)) + '%';
+                    }
+                    return alc;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
