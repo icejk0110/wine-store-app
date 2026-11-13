@@ -154,13 +154,13 @@
                         <label class="block text-xs font-semibold text-gray-400 mb-1" x-text="t('filterCountry')"></label>
                         <select x-model="filters.country" @change="fetchWines()" class="w-full bg-gray-900 border border-gray-700 text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
                             <option value="" x-text="t('all')"></option>
-                            <option value="ชิลี" x-text="lang === 'th' ? 'ชิลี' : 'Chile (ชิลี)'"></option>
-                            <option value="แอฟริกาใต้" x-text="lang === 'th' ? 'แอฟริกาใต้' : 'South Africa (แอฟริกาใต้)'"></option>
-                            <option value="ฝรั่งเศส" x-text="lang === 'th' ? 'ฝรั่งเศส' : 'France (ฝรั่งเศส)'"></option>
-                            <option value="อิตาลี" x-text="lang === 'th' ? 'อิตาลี' : 'Italy (อิตาลี)'"></option>
-                            <option value="ออสเตรีย" x-text="lang === 'th' ? 'ออสเตรีย' : 'Austria (ออสเตรีย)'"></option>
-                            <option value="โปรตุเกส" x-text="lang === 'th' ? 'โปรตุเกส' : 'Portugal (โปรตุเกส)'"></option>
-                            <option value="ออสเตรเลีย" x-text="lang === 'th' ? 'ออสเตรเลีย' : 'Australia (ออสเตรเลีย)'"></option>
+                            <option value="ชิลี" x-text="lang === 'th' ? 'ชิลี' : 'Chile'"></option>
+                            <option value="แอฟริกาใต้" x-text="lang === 'th' ? 'แอฟริกาใต้' : 'South Africa'"></option>
+                            <option value="ฝรั่งเศส" x-text="lang === 'th' ? 'ฝรั่งเศส' : 'France'"></option>
+                            <option value="อิตาลี" x-text="lang === 'th' ? 'อิตาลี' : 'Italy'"></option>
+                            <option value="ออสเตรีย" x-text="lang === 'th' ? 'ออสเตรีย' : 'Austria'"></option>
+                            <option value="โปรตุเกส" x-text="lang === 'th' ? 'โปรตุเกส' : 'Portugal'"></option>
+                            <option value="ออสเตรเลีย" x-text="lang === 'th' ? 'ออสเตรเลีย' : 'Australia'"></option>
                         </select>
                     </div>
                     <div>
@@ -191,7 +191,7 @@
                                 <div class="p-4 space-y-1.5">
                                     <p class="text-xs font-bold text-amber-500 uppercase tracking-wider" x-text="wine.brand"></p>
                                     <h3 class="font-bold text-base text-gray-100 line-clamp-1 group-hover:text-amber-400 transition" x-text="wine.name"></h3>
-                                    <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed" x-text="wine.description"></p>
+                                    <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed" x-text="getWineField(wine, 'description')"></p>
                                 </div>
                             </div>
 
@@ -356,7 +356,7 @@
                                             <td class="py-3 px-3 text-amber-400 font-semibold">฿<span x-text="wine.price ? wine.price.toLocaleString() : '0'"></span></td>
                                             <td class="py-3 px-3 text-center space-x-2">
                                                 <button @click="editWine(wine)" class="px-2.5 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg text-xs transition" x-text="t('editBtn')"></button>
-                                                <button @click="deleteWine(wine.id)" class="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-xs transition" x-text="t('deleteBtn')"></button>
+                                                <button @click="deleteWine(wine.id)" class="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-xs transition" x-text="t('deleteBtn')"></button>
                                             </td>
                                         </tr>
                                     </template>
@@ -437,8 +437,8 @@
                             <div class="flex flex-wrap gap-2 pt-1 text-xs text-gray-300">
                                 <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeType')"></span>: <strong class="text-amber-400" x-text="selectedWine.type"></strong></span>
                                 <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeVintage')"></span>: <strong class="text-amber-400" x-text="selectedWine.vintage"></strong></span>
-                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCountry')"></span>: <strong class="text-amber-400" x-text="selectedWine.country"></strong></span>
-                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCity')"></span>: <strong class="text-amber-400" x-text="selectedWine.city"></strong></span>
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCountry')"></span>: <strong class="text-amber-400" x-text="getWineField(selectedWine, 'country')"></strong></span>
+                                <span class="bg-gray-800 px-2.5 py-1 rounded-lg"><span x-text="t('badgeCity')"></span>: <strong class="text-amber-400" x-text="getWineField(selectedWine, 'city')"></strong></span>
                             </div>
                         </div>
                     </div>
@@ -455,7 +455,7 @@
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
                             <p class="text-amber-500 font-bold" x-text="t('attrColorSweet')"></p>
-                            <p><span x-text="selectedWine.color || '-'"></span> / <span x-text="selectedWine.sweetness || '-'"></span></p>
+                            <p><span x-text="getWineField(selectedWine, 'color')"></span> / <span x-text="getWineField(selectedWine, 'sweetness')"></span></p>
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1">
                             <p class="text-amber-500 font-bold" x-text="t('attrSize')"></p>
@@ -463,19 +463,19 @@
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
                             <p class="text-amber-500 font-bold" x-text="t('attrTaste')"></p>
-                            <p class="leading-relaxed" x-text="selectedWine.taste || '-'"></p>
+                            <p class="leading-relaxed" x-text="getWineField(selectedWine, 'taste')"></p>
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
                             <p class="text-amber-500 font-bold" x-text="t('attrAroma')"></p>
-                            <p class="leading-relaxed" x-text="selectedWine.aroma || '-'"></p>
+                            <p class="leading-relaxed" x-text="getWineField(selectedWine, 'aroma')"></p>
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
                             <p class="text-amber-500 font-bold" x-text="t('attrPairing')"></p>
-                            <p class="leading-relaxed" x-text="selectedWine.food_pairing || '-'"></p>
+                            <p class="leading-relaxed" x-text="getWineField(selectedWine, 'food_pairing')"></p>
                         </div>
                         <div class="bg-gray-900/40 p-3.5 rounded-xl border border-gray-800/60 space-y-1 md:col-span-2">
                             <p class="text-amber-500 font-bold" x-text="t('attrDesc')"></p>
-                            <p class="leading-relaxed text-gray-400" x-text="selectedWine.description || '-'"></p>
+                            <p class="leading-relaxed text-gray-400" x-text="getWineField(selectedWine, 'description')"></p>
                         </div>
                     </div>
 
@@ -492,28 +492,28 @@
         </div>
     </div>
 
-    <!-- MODAL: ADMIN ADD/EDIT WINE FORM -->
+    <!-- MODAL: ADMIN ADD/EDIT WINE FORM (รองรับกรอกข้อมูลคู่ภาษา TH/EN) -->
     <div x-show="showWineFormModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" x-cloak>
-        <div class="bg-[#161f31] border border-gray-800 w-full max-w-3xl rounded-2xl p-6 shadow-2xl relative space-y-6 my-8 max-h-[90vh] overflow-y-auto" @click.stop>
+        <div class="bg-[#161f31] border border-gray-800 w-full max-w-4xl rounded-2xl p-6 shadow-2xl relative space-y-6 my-8 max-h-[90vh] overflow-y-auto" @click.stop>
             <button @click="showWineFormModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold">✕</button>
             
             <h3 class="text-xl font-bold text-amber-400" x-text="isEditingWine ? t('editWineTitle') : t('addWineTitle')"></h3>
 
             <form @submit.prevent="saveWineForm()" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formName')"></label>
+                    <label class="block text-gray-400 mb-1">ชื่อไวน์ (Name)</label>
                     <input type="text" x-model="wineForm.name" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formBrand')"></label>
+                    <label class="block text-gray-400 mb-1">แบรนด์ (Brand)</label>
                     <input type="text" x-model="wineForm.brand" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formPrice')"></label>
+                    <label class="block text-gray-400 mb-1">ราคา (Price - บาท)</label>
                     <input type="number" step="any" x-model="wineForm.price" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formType')"></label>
+                    <label class="block text-gray-400 mb-1">ประเภทไวน์ (Type)</label>
                     <select x-model="wineForm.type" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                         <option value="Red Wine">Red Wine</option>
                         <option value="White Wine">White Wine</option>
@@ -523,55 +523,105 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formVintage')"></label>
+                    <label class="block text-gray-400 mb-1">ปีที่ผลิต (Vintage)</label>
                     <input type="text" x-model="wineForm.vintage" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formCountry')"></label>
+                    <label class="block text-gray-400 mb-1">ขนาดบรรจุ (Size)</label>
+                    <input type="text" x-model="wineForm.size" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <!-- ประเทศ (TH / EN) -->
+                <div>
+                    <label class="block text-gray-400 mb-1">ประเทศ (Country - TH)</label>
                     <input type="text" x-model="wineForm.country" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formCity')"></label>
+                    <label class="block text-gray-400 mb-1">ประเทศ (Country - EN)</label>
+                    <input type="text" x-model="wineForm.country_en" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <!-- เมือง (TH / EN) -->
+                <div>
+                    <label class="block text-gray-400 mb-1">เมือง (City - TH)</label>
                     <input type="text" x-model="wineForm.city" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formVariety')"></label>
+                    <label class="block text-gray-400 mb-1">เมือง (City - EN)</label>
+                    <input type="text" x-model="wineForm.city_en" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1">สายพันธุ์องุ่น (Variety)</label>
                     <input type="text" x-model="wineForm.variety" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formAlcohol')"></label>
+                    <label class="block text-gray-400 mb-1">ระดับแอลกอฮอล์ (Alcohol เช่น 0.135)</label>
                     <input type="number" step="any" x-model="wineForm.alcohol" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
+
+                <!-- สี (TH / EN) -->
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formSize')"></label>
-                    <input type="text" x-model="wineForm.size" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formColor')"></label>
+                    <label class="block text-gray-400 mb-1">สี (Color - TH)</label>
                     <input type="text" x-model="wineForm.color" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1" x-text="t('formSweetness')"></label>
+                    <label class="block text-gray-400 mb-1">สี (Color - EN)</label>
+                    <input type="text" x-model="wineForm.color_en" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <!-- ความหวาน (TH / EN) -->
+                <div>
+                    <label class="block text-gray-400 mb-1">ความหวาน (Sweetness - TH)</label>
                     <input type="text" x-model="wineForm.sweetness" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-400 mb-1" x-text="t('formTaste')"></label>
+                <div>
+                    <label class="block text-gray-400 mb-1">ความหวาน (Sweetness - EN)</label>
+                    <input type="text" x-model="wineForm.sweetness_en" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                </div>
+
+                <!-- รสชาติ (TH / EN) -->
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">รสชาติ (Taste - TH)</label>
                     <textarea x-model="wineForm.taste" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-400 mb-1" x-text="t('formAroma')"></label>
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">รสชาติ (Taste - EN)</label>
+                    <textarea x-model="wineForm.taste_en" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+
+                <!-- กลิ่น (TH / EN) -->
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">กลิ่น (Aroma - TH)</label>
                     <textarea x-model="wineForm.aroma" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-400 mb-1" x-text="t('formPairing')"></label>
-                    <input type="text" x-model="wineForm.food_pairing" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">กลิ่น (Aroma - EN)</label>
+                    <textarea x-model="wineForm.aroma_en" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-400 mb-1" x-text="t('formDesc')"></label>
+
+                <!-- อาหารที่เข้ากัน (TH / EN) -->
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">อาหารที่เข้ากัน (Food Pairing - TH)</label>
+                    <textarea x-model="wineForm.food_pairing" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">อาหารที่เข้ากัน (Food Pairing - EN)</label>
+                    <textarea x-model="wineForm.food_pairing_en" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+
+                <!-- คำอธิบาย (TH / EN) -->
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">คำอธิบาย (Description - TH)</label>
                     <textarea x-model="wineForm.description" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
                 </div>
+                <div class="md:col-span-1">
+                    <label class="block text-gray-400 mb-1">คำอธิบาย (Description - EN)</label>
+                    <textarea x-model="wineForm.description_en" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200"></textarea>
+                </div>
+
                 <div class="md:col-span-2">
-                    <label class="block text-gray-400 mb-1" x-text="t('formImage')"></label>
+                    <label class="block text-gray-400 mb-1">ลิงก์รูปภาพ (Image URL)</label>
                     <input type="text" x-model="wineForm.image_url" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-gray-200">
                 </div>
 
@@ -661,23 +711,6 @@
                 saveInterestBtn: '❤️ บันทึกความสนใจ / สั่งซื้อ',
                 editWineTitle: 'แก้ไขข้อมูลไวน์',
                 addWineTitle: 'เพิ่มไวน์ใหม่',
-                formName: 'ชื่อไวน์ (Name)',
-                formBrand: 'แบรนด์ (Brand)',
-                formPrice: 'ราคา (Price - บาท)',
-                formType: 'ประเภทไวน์ (Type)',
-                formVintage: 'ปีที่ผลิต (Vintage)',
-                formCountry: 'ประเทศ (Country)',
-                formCity: 'เมือง (City)',
-                formVariety: 'สายพันธุ์องุ่น (Variety)',
-                formAlcohol: 'ระดับแอลกอฮอล์ (Alcohol เช่น 0.135)',
-                formSize: 'ขนาดบรรจุ (Size)',
-                formColor: 'สี (Color)',
-                formSweetness: 'ความหวาน (Sweetness)',
-                formTaste: 'รสชาติ (Taste)',
-                formAroma: 'กลิ่น (Aroma)',
-                formPairing: 'อาหารที่เข้ากัน (Food Pairing)',
-                formDesc: 'คำอธิบาย (Description)',
-                formImage: 'ลิงก์รูปภาพ (Image URL)',
                 cancelBtn: 'ยกเลิก',
                 saveBtn: 'บันทึกข้อมูล',
                 pageTitleShop: 'ค้นหา & แนะนำไวน์ (Wine Selection)',
@@ -767,23 +800,6 @@
                 saveInterestBtn: '❤️ Save to Wishlist / Order',
                 editWineTitle: 'Edit Wine Details',
                 addWineTitle: 'Add New Wine',
-                formName: 'Wine Name',
-                formBrand: 'Brand',
-                formPrice: 'Price (THB)',
-                formType: 'Wine Type',
-                formVintage: 'Vintage',
-                formCountry: 'Country',
-                formCity: 'City / Region',
-                formVariety: 'Grape Variety',
-                formAlcohol: 'Alcohol Level (e.g. 0.135)',
-                formSize: 'Bottle Size',
-                formColor: 'Color',
-                formSweetness: 'Sweetness',
-                formTaste: 'Taste',
-                formAroma: 'Aroma',
-                formPairing: 'Food Pairing',
-                formDesc: 'Description',
-                formImage: 'Image URL',
                 cancelBtn: 'Cancel',
                 saveBtn: 'Save Changes',
                 pageTitleShop: 'Wine Search & Recommendations',
@@ -822,14 +838,17 @@
                 reportPeriod: 'monthly',
                 reports: [],
 
-                // Admin Wine Form States
+                // Admin Wine Form States (รองรับฟิลด์ TH และ _en)
                 showWineFormModal: false,
                 isEditingWine: false,
                 wineForm: {
-                    id: null, name: '', price: '', vintage: '', city: '', country: '',
+                    id: null, name: '', price: '', vintage: '',
+                    city: '', city_en: '', country: '', country_en: '',
                     type: 'Red Wine', variety: '', alcohol: '', size: '', brand: '',
-                    color: '', sweetness: '', taste: '', aroma: '', food_pairing: '',
-                    description: '', image_url: ''
+                    color: '', color_en: '', sweetness: '', sweetness_en: '',
+                    taste: '', taste_en: '', aroma: '', aroma_en: '',
+                    food_pairing: '', food_pairing_en: '',
+                    description: '', description_en: '', image_url: ''
                 },
 
                 init() {
@@ -844,6 +863,18 @@
 
                 t(key) {
                     return translations[this.lang][key] || key;
+                },
+
+                // ฟังก์ชันเลือกแสดงภาษาอัตโนมัติ (ถ้าเลือก EN และมีค่า _en จะแสดง _en ถ้าไม่มีจะ fallback มาแสดง TH)
+                getWineField(wine, field) {
+                    if (!wine) return '-';
+                    if (this.lang === 'en') {
+                        const enVal = wine[field + '_en'];
+                        if (enVal && enVal.trim() !== '' && enVal !== 'nan') {
+                            return enVal;
+                        }
+                    }
+                    return wine[field] || '-';
                 },
 
                 translateStatus(status) {
@@ -1000,10 +1031,13 @@
                 openWineForm() {
                     this.isEditingWine = false;
                     this.wineForm = {
-                        id: null, name: '', price: '', vintage: '', city: '', country: '',
+                        id: null, name: '', price: '', vintage: '',
+                        city: '', city_en: '', country: '', country_en: '',
                         type: 'Red Wine', variety: '', alcohol: '', size: '', brand: '',
-                        color: '', sweetness: '', taste: '', aroma: '', food_pairing: '',
-                        description: '', image_url: ''
+                        color: '', color_en: '', sweetness: '', sweetness_en: '',
+                        taste: '', taste_en: '', aroma: '', aroma_en: '',
+                        food_pairing: '', food_pairing_en: '',
+                        description: '', description_en: '', image_url: ''
                     };
                     this.showWineFormModal = true;
                 },
